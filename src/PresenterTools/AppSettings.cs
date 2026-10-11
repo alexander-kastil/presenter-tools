@@ -126,6 +126,19 @@ public static class AppSettings
         WriteRoot(root);
     }
 
+    public static (int X, int Y)? LoadToolbarPosition()
+    {
+        var toolbar = ReadRoot()["Toolbar"] as JsonObject;
+        return Integer(toolbar?["X"]) is { } x && Integer(toolbar?["Y"]) is { } y ? (x, y) : null;
+    }
+
+    public static void SaveToolbarPosition(int x, int y)
+    {
+        var root = ReadRoot();
+        root["Toolbar"] = new JsonObject { ["X"] = x, ["Y"] = y };
+        WriteRoot(root);
+    }
+
     public static string? ValidFolder(string? path)
     {
         if (string.IsNullOrWhiteSpace(path) || !Path.IsPathFullyQualified(path.Trim()))
@@ -197,6 +210,9 @@ public static class AppSettings
 
     private static uint? Number(JsonNode? node) =>
         node is JsonValue value && value.TryGetValue<uint>(out var number) ? number : null;
+
+    private static int? Integer(JsonNode? node) =>
+        node is JsonValue value && value.TryGetValue<int>(out var number) ? number : null;
 
     private static string? Text(JsonNode? node) =>
         node is JsonValue value && value.TryGetValue<string>(out var text) && !string.IsNullOrWhiteSpace(text) ? text.Trim() : null;

@@ -100,6 +100,7 @@ public partial class ToolbarWindow : Window
         {
             Left = SystemParameters.WorkArea.Left + 10;
             Top = SystemParameters.WorkArea.Top + 10;
+            RestorePosition();
             Shots.LibraryWindow.ReservedWidth = ActualWidth;
         };
         Refresh();
@@ -283,7 +284,38 @@ public partial class ToolbarWindow : Window
         button.BorderBrush = active ? Active : Brushes.Transparent;
     }
 
-    private void OnDrag(object sender, MouseButtonEventArgs e) => DragMove();
+    private void OnDrag(object sender, MouseButtonEventArgs e)
+    {
+        Shots.Native.GetWindowRect(Handle, out var before);
+        DragMove();
+        Shots.Native.GetWindowRect(Handle, out var after);
+        if (_dockHost is null && (after.Left != before.Left || after.Top != before.Top))
+        {
+            AppSettings.SaveToolbarPosition(after.Left, after.Top);
+        }
+    }
+
+    private void RestorePosition()
+    {
+        if (AppSettings.LoadToolbarPosition() is not { } saved)
+        {
+            return;
+        }
+
+        Shots.Native.GetWindowRect(Handle, out var current);
+        var rect = new Shots.Native.RECT
+        {
+            Left = saved.X,
+            Top = saved.Y,
+            Right = saved.X + current.Right - current.Left,
+            Bottom = saved.Y + current.Bottom - current.Top
+        };
+        if (Shots.Native.MonitorFromRect(ref rect, Shots.Native.MONITOR_DEFAULTTONULL) != IntPtr.Zero)
+        {
+            Shots.Native.SetWindowPos(Handle, IntPtr.Zero, saved.X, saved.Y, 0, 0, NoSize | NoZOrder | NoActivate);
+        }
+    }
+
     private void OnPen(object sender, RoutedEventArgs e) => _session.SetMode(Mode.Pen);
     private void OnText(object sender, RoutedEventArgs e) => _session.SetMode(Mode.Text);
     private void OnEraser(object sender, RoutedEventArgs e) => _session.SetMode(Mode.Eraser);

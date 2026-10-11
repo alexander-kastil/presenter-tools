@@ -39,11 +39,35 @@ while :; do
   [ "$(ls "$OUT"/*.dll | wc -l)" -eq "$before" ] && break
 done
 
+# Every MSYS2 package a staged binary comes from, with its license files and the four GNU license texts.
+PACKAGES=$(cd "$OUT" && find . -name '*.dll' -o -name 'gst-plugin-scanner.exe' | sed 's|^\./||' \
+  | while read -r f; do case "$f" in */*) echo "$PREFIX/$f" ;; *) echo "$PREFIX/bin/$f" ;; esac; done \
+  | xargs pacman -Qqo | sort -u)
+mkdir -p "$OUT/licenses"
+for p in $PACKAGES; do
+  pacman -Qlq "$p" | { grep "^$PREFIX/share/licenses/.*[^/]$" || true; } | while read -r f; do
+    rel="${f#$PREFIX/share/licenses/}"
+    mkdir -p "$OUT/licenses/$(dirname "$rel")"
+    cp "$f" "$OUT/licenses/$rel"
+  done
+done
+cp "$PREFIX/share/licenses/xz/COPYING.GPLv2" "$OUT/licenses/GPL-2.0.txt"
+cp "$PREFIX/share/licenses/xz/COPYING.GPLv3" "$OUT/licenses/GPL-3.0.txt"
+cp "$PREFIX/share/licenses/xz/COPYING.LGPLv2.1" "$OUT/licenses/LGPL-2.1.txt"
+cp "$PREFIX/share/licenses/libunistring/LICENSE.LIB" "$OUT/licenses/LGPL-3.0.txt"
+
 cp "$UXPLAY/LICENSE" "$OUT/UxPlay-LICENSE.txt"
 {
   echo "uxplay.exe is UxPlay, licensed under the GNU GPL v3 (UxPlay-LICENSE.txt)."
   echo "Source: https://github.com/FDH2/UxPlay commit $(git -C "$UXPLAY" rev-parse HEAD)"
-  echo "GStreamer and the other DLLs in this folder come from MSYS2 UCRT64 packages (https://packages.msys2.org)."
+  echo
+  echo "GStreamer and the other DLLs in this folder come from the MSYS2 UCRT64 packages below."
+  echo "Their sources, by package name and version: https://repo.msys2.org/mingw/sources/"
+  echo "License texts: licenses/GPL-2.0.txt, GPL-3.0.txt, LGPL-2.1.txt, LGPL-3.0.txt and licenses/<package>/."
+  echo
+  for p in $PACKAGES; do
+    echo "$(pacman -Q "$p") ($(pacman -Qi "$p" | sed -n 's/^Licenses *: //p'))"
+  done
 } > "$OUT/THIRD-PARTY.txt"
 
 echo "staged: $(find "$OUT" -type f | wc -l) files, $(du -sh "$OUT" | cut -f1)"
