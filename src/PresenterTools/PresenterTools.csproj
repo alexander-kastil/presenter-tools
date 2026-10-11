@@ -1,0 +1,38 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <OutputType>WinExe</OutputType>
+    <TargetFramework>net10.0-windows</TargetFramework>
+    <UseWPF>true</UseWPF>
+    <UseWindowsForms>true</UseWindowsForms>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <PlatformTarget>x64</PlatformTarget>
+    <ApplicationManifest>app.manifest</ApplicationManifest>
+    <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
+    <!-- WPF app: per-monitor DPI comes from app.manifest; the WinForms analyzer does not apply -->
+    <NoWarn>$(NoWarn);WFO0003</NoWarn>
+    <ApplicationIcon>Assets\PresenterTools.ico</ApplicationIcon>
+    <Company>integrations.at</Company>
+    <Product>Presenter Tools</Product>
+    <Authors>integrations.at</Authors>
+    <Copyright>© 2026 integrations.at</Copyright>
+    <Version>1.0.0</Version>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <Using Remove="System.Windows.Forms" />
+    <Using Remove="System.Drawing" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Resource Include="Assets\PresenterTools.ico" />
+    <Resource Include="Assets\integrations-wordmark.png" />
+  </ItemGroup>
+
+  <!-- UxPlay and its GStreamer runtime, staged by ..\PresenterTools.Setup\stage-engine.sh -->
+  <ItemGroup>
+    <Content Include="engine\**" CopyToOutputDirectory="PreserveNewest" CopyToPublishDirectory="PreserveNewest" />
+  </ItemGroup>
+
+</Project>

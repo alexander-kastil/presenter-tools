@@ -1,0 +1,6 @@
+bin/
+obj/
+.vs/
+/src/PresenterTools/engine/
+/setup/*.msi
+/.claude/scheduled_tasks.lock

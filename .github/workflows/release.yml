@@ -1,0 +1,94 @@
+name: Release
+
+on:
+  push:
+    tags: ['v*']
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: Existing tag to build and release (for example v1.2.0)
+        required: true
+        type: string
+
+permissions:
+  contents: read
+
+env:
+  TAG: ${{ inputs.tag || github.ref_name }}
+  WIXPROJ: src/PresenterTools.Setup/PresenterTools.Setup.wixproj
+
+jobs:
+  msi:
+    runs-on: windows-latest
+    timeout-minutes: 60
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ env.TAG }}
+          submodules: recursive
+
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: 10.0.x
+
+      - uses: actions/cache@v4
+        with:
+          path: ~/.nuget/packages
+          key: nuget-${{ runner.os }}-${{ hashFiles('src/**/*.csproj', 'src/**/*.wixproj') }}
+          restore-keys: nuget-${{ runner.os }}-
+
+      # UCRT64 toolchain and GStreamer runtime that stage-engine.sh builds and copies from
+      - uses: msys2/setup-msys2@v2
+        id: msys
+        with:
+          msystem: UCRT64
+          update: true
+          install: >-
+            git
+            mingw-w64-ucrt-x86_64-gcc
+            mingw-w64-ucrt-x86_64-cmake
+            mingw-w64-ucrt-x86_64-ninja
+            mingw-w64-ucrt-x86_64-pkgconf
+            mingw-w64-ucrt-x86_64-openssl
+            mingw-w64-ucrt-x86_64-libplist
+            mingw-w64-ucrt-x86_64-gstreamer
+            mingw-w64-ucrt-x86_64-gst-plugins-base
+            mingw-w64-ucrt-x86_64-gst-plugins-good
+            mingw-w64-ucrt-x86_64-gst-plugins-bad
+            mingw-w64-ucrt-x86_64-gst-libav
+
+      # Tag v1.2.3 becomes MSI and assembly version 1.2.3; MSI versions must be numeric
+      - name: Derive version
+        shell: pwsh
+        run: |
+          $version = $env:TAG -replace '^v', ''
+          if ($version -notmatch '^\d+\.\d+\.\d+(\.\d+)?$') { throw "Tag '$env:TAG' is not of the form v<major>.<minor>.<patch>" }
+          "VERSION=$version" >> $env:GITHUB_ENV
+
+      # The signing certificate is absent on the runner, so the MSI is built unsigned; sign-release.ps1 signs and publishes it
+      - name: Build MSI
+        shell: pwsh
+        env:
+          MSYS_BASH: ${{ steps.msys.outputs.msys2-location }}\usr\bin\bash.exe
+        run: >-
+          dotnet build $env:WIXPROJ -c Release "-p:MsysBash=$env:MSYS_BASH" "-p:AppVersion=$env:VERSION"
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: PresenterTools-${{ env.VERSION }}-unsigned
+          path: setup/PresenterTools.msi
+          if-no-files-found: error
+
+      - name: Summary
+        shell: pwsh
+        run: |
+          @(
+            '### Unsigned MSI built'
+            ''
+            "``PresenterTools.msi`` $env:VERSION was uploaded as the workflow artifact ``PresenterTools-$env:VERSION-unsigned``. Nothing was published to a GitHub Release."
+            'Sign and publish it locally:'
+            ''
+            '```powershell'
+            ".\sign-release.ps1 -Tag $env:TAG"
+            '```'
+          ) >> $env:GITHUB_STEP_SUMMARY

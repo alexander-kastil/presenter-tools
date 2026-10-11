@@ -1,0 +1,43 @@
+<Wix xmlns="http://wixtoolset.org/schemas/v4/wxs"
+     xmlns:fw="http://wixtoolset.org/schemas/v4/wxs/firewall">
+  <Package Name="Presenter Tools"
+           Manufacturer="integrations.at"
+           Version="$(AppVersion)"
+           UpgradeCode="B7D41E96-2C58-4A0F-9E13-6A8F0C5D72B4"
+           Scope="perMachine">
+
+    <MajorUpgrade DowngradeErrorMessage="A newer version of Presenter Tools is already installed." />
+    <MediaTemplate EmbedCab="yes" />
+
+    <Icon Id="PresenterToolsIcon" SourceFile="..\PresenterTools\Assets\PresenterTools.ico" />
+    <Property Id="ARPPRODUCTICON" Value="PresenterToolsIcon" />
+    <Property Id="ARPURLINFOABOUT" Value="https://integrations.at" />
+    <Property Id="ARPHELPLINK" Value="https://integrations.at" />
+
+    <StandardDirectory Id="ProgramFiles64Folder">
+      <Directory Id="INSTALLFOLDER" Name="Presenter Tools" />
+    </StandardDirectory>
+
+    <Files Include="$(PublishDir)**" Directory="INSTALLFOLDER" />
+
+    <Component Id="StartMenuShortcutComponent" Directory="ProgramMenuFolder" Bitness="always64">
+      <Shortcut Id="StartMenuShortcut" Name="Presenter Tools" Target="[INSTALLFOLDER]PresenterTools.exe" WorkingDirectory="INSTALLFOLDER" Icon="PresenterToolsIcon" />
+      <RegistryValue Root="HKCU" Key="Software\PresenterTools" Name="StartMenuShortcut" Type="integer" Value="1" KeyPath="yes" />
+    </Component>
+
+    <!-- AirPlay senders connect to uxplay.exe on TCP and UDP ports it chooses; allow them from the local subnet only -->
+    <Component Id="FirewallComponent" Directory="INSTALLFOLDER" Bitness="always64" Guid="C48A5E02-71B9-4D3F-8A66-2F1E9B07D5C3">
+      <fw:FirewallException Id="UxPlayTcp" Name="Presenter Tools AirPlay receiver (TCP)" Program="[INSTALLFOLDER]engine\uxplay.exe" Protocol="tcp" Scope="localSubnet" Profile="all" />
+      <fw:FirewallException Id="UxPlayUdp" Name="Presenter Tools AirPlay receiver (UDP)" Program="[INSTALLFOLDER]engine\uxplay.exe" Protocol="udp" Scope="localSubnet" Profile="all" />
+      <RegistryValue Root="HKLM" Key="Software\PresenterTools" Name="Firewall" Type="integer" Value="1" KeyPath="yes" />
+    </Component>
+
+    <Property Id="AUTOSTART" Secure="yes" />
+    <UIRef Id="PresenterToolsUI" />
+
+    <Component Id="AutostartComponent" Directory="INSTALLFOLDER" Bitness="always64" Condition="AUTOSTART = &quot;1&quot;">
+      <RegistryValue Root="HKCU" Key="Software\Microsoft\Windows\CurrentVersion\Run" Name="PresenterTools" Type="string" Value="&quot;[INSTALLFOLDER]PresenterTools.exe&quot; --autostart" KeyPath="yes" />
+    </Component>
+
+  </Package>
+</Wix>

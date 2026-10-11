@@ -1,0 +1,60 @@
+<Project Sdk="WixToolset.Sdk/6.0.2">
+
+  <PropertyGroup>
+    <OutputName>PresenterTools</OutputName>
+    <Platform Condition="'$(Platform)' == ''">x64</Platform>
+    <PublishDir>$(MSBuildProjectDirectory)\obj\publish\</PublishDir>
+    <EngineDir>$(MSBuildProjectDirectory)\..\PresenterTools\engine</EngineDir>
+    <MsysBash Condition="'$(MsysBash)' == ''">C:\msys64\usr\bin\bash.exe</MsysBash>
+    <AppVersion Condition="'$(AppVersion)' == ''">1.0.0</AppVersion>
+    <DefineConstants>$(DefineConstants);PublishDir=$(PublishDir);AppVersion=$(AppVersion)</DefineConstants>
+    <SuppressValidation>false</SuppressValidation>
+    <SignThumbprint Condition="'$(SignThumbprint)' == ''">B29050FA48FD6A2337F3944A10E6F461486C533E</SignThumbprint>
+    <SignTimestampServer>http://timestamp.digicert.com</SignTimestampServer>
+    <SignScript>$c = Get-Item ('Cert:\CurrentUser\My\' + $env:SIGN_THUMBPRINT); $r = Set-AuthenticodeSignature -FilePath $env:SIGN_FILE -Certificate $c -HashAlgorithm SHA256 -TimestampServer $env:SIGN_TIMESTAMP; if (-not $r.SignerCertificate -or -not $r.TimeStamperCertificate) { throw ('Signing failed: ' + $r.StatusMessage) }</SignScript>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="WixToolset.UI.wixext" Version="6.0.2" />
+    <PackageReference Include="WixToolset.Firewall.wixext" Version="6.0.2" />
+  </ItemGroup>
+
+  <!-- Builds UxPlay and stages it with its GStreamer runtime from MSYS2 UCRT64 into ..\PresenterTools\engine -->
+  <Target Name="StageEngine" BeforeTargets="PublishPresenterTools">
+    <Error Condition="!Exists('$(MsysBash)')" Text="Presenter Tools: MSYS2 not found at $(MsysBash); install MSYS2 or pass -p:MsysBash=&lt;path to bash.exe&gt;" />
+    <PropertyGroup>
+      <_StageScript>$([System.String]::Copy('$(MSBuildProjectDirectory)\stage-engine.sh').Replace('\','/'))</_StageScript>
+      <_StageOut>$([System.IO.Path]::GetFullPath('$(EngineDir)').Replace('\','/'))</_StageOut>
+    </PropertyGroup>
+    <Exec Command="&quot;$(MsysBash)&quot; -lc &quot;bash '$(_StageScript)' '$(_StageOut)'&quot;" EnvironmentVariables="MSYSTEM=UCRT64;CHERE_INVOKING=1" />
+  </Target>
+
+  <Target Name="PublishPresenterTools" BeforeTargets="BeforeBuild">
+    <RemoveDir Directories="$(PublishDir)" />
+    <Exec Command="dotnet publish &quot;$(MSBuildProjectDirectory)\..\PresenterTools\PresenterTools.csproj&quot; -c Release -r win-x64 --self-contained true -p:Version=$(AppVersion) -o &quot;$(PublishDir)&quot;" />
+  </Target>
+
+  <Target Name="CheckSigningCertificate">
+    <Exec Command="pwsh -NoProfile -NonInteractive -Command &quot;if (Test-Path ('Cert:\CurrentUser\My\' + $env:SIGN_THUMBPRINT)) { 'found' }&quot;" EnvironmentVariables="SIGN_THUMBPRINT=$(SignThumbprint)" ConsoleToMSBuild="true" StandardOutputImportance="low">
+      <Output TaskParameter="ConsoleOutput" ItemName="_SigningCertProbe" />
+    </Exec>
+    <PropertyGroup>
+      <CanSign Condition="'@(_SigningCertProbe)' == 'found'">true</CanSign>
+      <CanSign Condition="'$(CanSign)' == ''">false</CanSign>
+    </PropertyGroup>
+    <Message Importance="high" Condition="'$(CanSign)' != 'true'" Text="Presenter Tools: signing certificate $(SignThumbprint) not found, building unsigned" />
+  </Target>
+
+  <Target Name="SignPublishedExe" AfterTargets="PublishPresenterTools" DependsOnTargets="CheckSigningCertificate">
+    <Exec Condition="'$(CanSign)' == 'true'" Command="pwsh -NoProfile -NonInteractive -Command &quot;$(SignScript)&quot;" EnvironmentVariables="SIGN_THUMBPRINT=$(SignThumbprint);SIGN_FILE=$(PublishDir)PresenterTools.exe;SIGN_TIMESTAMP=$(SignTimestampServer)" />
+  </Target>
+
+  <Target Name="SignMsi" AfterTargets="Build" DependsOnTargets="CheckSigningCertificate">
+    <Exec Condition="'$(CanSign)' == 'true'" Command="pwsh -NoProfile -NonInteractive -Command &quot;$(SignScript)&quot;" EnvironmentVariables="SIGN_THUMBPRINT=$(SignThumbprint);SIGN_FILE=$(TargetPath);SIGN_TIMESTAMP=$(SignTimestampServer)" />
+  </Target>
+
+  <Target Name="CopyMsiToRoot" AfterTargets="SignMsi">
+    <Copy SourceFiles="$(TargetPath)" DestinationFolder="$(MSBuildProjectDirectory)\..\..\setup" />
+  </Target>
+
+</Project>
