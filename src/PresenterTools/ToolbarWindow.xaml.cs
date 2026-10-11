@@ -168,7 +168,7 @@ public partial class ToolbarWindow : Window
         {
             _dockOwner.LocationChanged += OnOwnerMoved;
             _dockOwner.SizeChanged += OnOwnerSized;
-            _dockOwner.StateChanged += OnOwnerMoved;
+            _dockOwner.StateChanged += OnOwnerState;
             _dockOwner.DpiChanged += OnOwnerDpi;
         }
 
@@ -177,6 +177,28 @@ public partial class ToolbarWindow : Window
     }
 
     private void OnOwnerMoved(object? sender, EventArgs e) => OnDockLayout(sender, e);
+
+    private bool OwnerMinimized => _dockOwner is { WindowState: WindowState.Minimized };
+
+    private void OnOwnerState(object? sender, EventArgs e)
+    {
+        if (OwnerMinimized)
+        {
+            MoveToStandalone();
+        }
+        else
+        {
+            OnDockLayout(sender, e);
+        }
+    }
+
+    private void MoveToStandalone()
+    {
+        if (_standalone is { } rect)
+        {
+            Shots.Native.SetWindowPos(Handle, IntPtr.Zero, rect.Left, rect.Top, 0, 0, NoSize | NoZOrder | NoActivate);
+        }
+    }
 
     private void OnOwnerSized(object sender, SizeChangedEventArgs e) => OnDockLayout(sender, e);
 
@@ -207,22 +229,19 @@ public partial class ToolbarWindow : Window
         {
             _dockOwner.LocationChanged -= OnOwnerMoved;
             _dockOwner.SizeChanged -= OnOwnerSized;
-            _dockOwner.StateChanged -= OnOwnerMoved;
+            _dockOwner.StateChanged -= OnOwnerState;
             _dockOwner.DpiChanged -= OnOwnerDpi;
             _dockOwner = null;
             DpiChanged -= OnOwnDpi;
         }
 
-        if (_standalone is { } rect)
-        {
-            _standalone = null;
-            Shots.Native.SetWindowPos(Handle, IntPtr.Zero, rect.Left, rect.Top, 0, 0, NoSize | NoZOrder | NoActivate);
-        }
+        MoveToStandalone();
+        _standalone = null;
     }
 
     private void OnDockLayout(object? sender, EventArgs e)
     {
-        if (_dockHost is not { IsLoaded: true } host || PresentationSource.FromVisual(host) is null)
+        if (OwnerMinimized || _dockHost is not { IsLoaded: true } host || PresentationSource.FromVisual(host) is null)
         {
             return;
         }
@@ -289,8 +308,13 @@ public partial class ToolbarWindow : Window
         Shots.Native.GetWindowRect(Handle, out var before);
         DragMove();
         Shots.Native.GetWindowRect(Handle, out var after);
-        if (_dockHost is null && (after.Left != before.Left || after.Top != before.Top))
+        if ((_dockHost is null || OwnerMinimized) && (after.Left != before.Left || after.Top != before.Top))
         {
+            if (_dockHost is not null)
+            {
+                _standalone = after;
+            }
+
             AppSettings.SaveToolbarPosition(after.Left, after.Top);
         }
     }
