@@ -31,4 +31,4 @@ Draw on your screen, capture and edit screenshots, and receive AirPlay screen mi
 
 MIT License, (c) 2026 Alexander Kastil, [integrations.at](https://integrations.at). See [LICENSE](LICENSE).
 
-The bundled AirPlay engine, [UxPlay](https://github.com/FDH2/UxPlay), is licensed separately under GPL-3.0. See [src/UxPlay/LICENSE](src/UxPlay/LICENSE).
+The bundled AirPlay engine, [UxPlay](https://github.com/FDH2/UxPlay), is licensed separately under GPL-3.0. 
