@@ -84,6 +84,7 @@ internal sealed class EditorView : UserControl
         area.PreviewMouseWheel += OnWheel;
         area.SizeChanged += (_, _) => ClampPan();
         Content = area;
+        ApplyCursor();
         Loaded += (_, _) =>
         {
             hooked = Window.GetWindow(this);
@@ -192,7 +193,7 @@ internal sealed class EditorView : UserControl
         }
 
         panel.Children.Add(tools);
-        var quick = new UniformGrid { Columns = 4 };
+        var quick = new UniformGrid { Columns = 2 };
         var copy = ActionButton("", "Copy image", Copy);
         copy.Click += async (_, _) =>
         {
@@ -206,7 +207,7 @@ internal sealed class EditorView : UserControl
             copy.ClearValue(Control.BorderBrushProperty);
         };
         quick.Children.Add(copy);
-        quick.Children.Add(ToolButton(Tool.Arrow, "", "Arrow", style));
+        quick.Children.Add(ToolButton(Tool.Arrow, "", "Arrow", style));
         panel.Children.Add(quick);
         thicknessCombo = Preset(Thicknesses, (int)thickness, "Thickness", v => thickness = v);
         panel.Children.Add(Labelled("", "Thickness", thicknessCombo));
@@ -221,6 +222,16 @@ internal sealed class EditorView : UserControl
         return panel;
     }
 
+    // On the whole area, not the image layer: the image is only a small part of the grey drawing area.
+    void ApplyCursor() =>
+        area.Cursor = tool switch
+        {
+            Tool.Select => null,
+            Tool.Pen => Cursors.Pen,
+            Tool.Text => Cursors.IBeam,
+            _ => Cursors.Cross
+        };
+
     RadioButton ToolButton(Tool value, string glyph, string name, Style style)
     {
         var button = new RadioButton { Content = Glyph(glyph), ToolTip = name, GroupName = "tools", Style = style, IsChecked = value == tool, Padding = new Thickness(2, 4, 2, 4) };
@@ -228,6 +239,7 @@ internal sealed class EditorView : UserControl
         {
             Finish();
             tool = value;
+            ApplyCursor();
             Deselect();
             if (value == Tool.Arrow)
             {
@@ -260,7 +272,7 @@ internal sealed class EditorView : UserControl
 
     void OnWheel(object sender, MouseWheelEventArgs e)
     {
-        if (tool != Tool.Select || entry is null || editor is not null || !viewport.IsMouseOver)
+        if (entry is null)
         {
             return;
         }

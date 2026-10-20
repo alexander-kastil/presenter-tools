@@ -98,11 +98,15 @@ public partial class ToolbarWindow : Window
         Closed += (_, _) => Shots.LibraryWindow.OpenChanged -= SyncLibrary;
         Loaded += (_, _) =>
         {
-            Left = SystemParameters.WorkArea.Left + 10;
-            Top = SystemParameters.WorkArea.Top + 10;
-            RestorePosition();
+            if (!RestorePosition())
+            {
+                Left = SystemParameters.WorkArea.Left + 10;
+                Top = SystemParameters.WorkArea.Top + 10;
+            }
+
             Shots.LibraryWindow.ReservedWidth = ActualWidth;
         };
+        Closing += (_, _) => SaveCurrentPosition();
         Refresh();
     }
 
@@ -184,11 +188,17 @@ public partial class ToolbarWindow : Window
     {
         if (OwnerMinimized)
         {
-            MoveToStandalone();
+            LibraryTools.Visibility = Visibility.Collapsed;
+            if (!RestorePosition())
+            {
+                MoveToStandalone();
+            }
         }
         else
         {
+            LibraryTools.Visibility = Visibility.Visible;
             OnDockLayout(sender, e);
+            DockLater();
         }
     }
 
@@ -319,11 +329,30 @@ public partial class ToolbarWindow : Window
         }
     }
 
-    private void RestorePosition()
+    // Every close path (X button, tray Exit, session end) keeps where the bar was, not only a drag.
+    // Docked beside the Library, the bar's own place is the standalone spot it left.
+    private void SaveCurrentPosition()
+    {
+        if (!IsLoaded)
+        {
+            return;
+        }
+
+        if (_dockHost is not null && !OwnerMinimized && _standalone is { } standalone)
+        {
+            AppSettings.SaveToolbarPosition(standalone.Left, standalone.Top);
+        }
+        else if (Shots.Native.GetWindowRect(Handle, out var rect))
+        {
+            AppSettings.SaveToolbarPosition(rect.Left, rect.Top);
+        }
+    }
+
+    private bool RestorePosition()
     {
         if (AppSettings.LoadToolbarPosition() is not { } saved)
         {
-            return;
+            return false;
         }
 
         Shots.Native.GetWindowRect(Handle, out var current);
@@ -334,10 +363,13 @@ public partial class ToolbarWindow : Window
             Right = saved.X + current.Right - current.Left,
             Bottom = saved.Y + current.Bottom - current.Top
         };
-        if (Shots.Native.MonitorFromRect(ref rect, Shots.Native.MONITOR_DEFAULTTONULL) != IntPtr.Zero)
+        if (Shots.Native.MonitorFromRect(ref rect, Shots.Native.MONITOR_DEFAULTTONULL) == IntPtr.Zero)
         {
-            Shots.Native.SetWindowPos(Handle, IntPtr.Zero, saved.X, saved.Y, 0, 0, NoSize | NoZOrder | NoActivate);
+            return false;
         }
+
+        Shots.Native.SetWindowPos(Handle, IntPtr.Zero, saved.X, saved.Y, 0, 0, NoSize | NoZOrder | NoActivate);
+        return true;
     }
 
     private void OnPen(object sender, RoutedEventArgs e) => _session.SetMode(Mode.Pen);

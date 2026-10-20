@@ -17,8 +17,12 @@
     <Product>Presenter Tools</Product>
     <Authors>integrations.at</Authors>
     <Copyright>© 2026 integrations.at</Copyright>
-    <Version>1.1.1</Version>
+    <Version>1.2.2</Version>
   </PropertyGroup>
+
+  <ItemGroup>
+    <InternalsVisibleTo Include="PresenterTools.Tests" />
+  </ItemGroup>
 
   <ItemGroup>
     <Using Remove="System.Windows.Forms" />

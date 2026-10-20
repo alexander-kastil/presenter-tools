@@ -66,6 +66,13 @@ public partial class OverlayWindow : Window
             Mode.Eraser => InkCanvasEditingMode.EraseByStroke,
             _ => InkCanvasEditingMode.None
         };
+        Canvas.UseCustomCursor = mode is Mode.Pen or Mode.Text;
+        Canvas.Cursor = mode switch
+        {
+            Mode.Pen => Cursors.Pen,
+            Mode.Text => Cursors.IBeam,
+            _ => null
+        };
         NativeMethods.SetClickThrough(new WindowInteropHelper(this).Handle, mode == Mode.Mouse);
     }
 

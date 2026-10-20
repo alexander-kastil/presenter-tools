@@ -1,0 +1,62 @@
+{
+  "repo": "presenter-tools",
+  "origin": "https://github.com/alexander-kastil/presenter-tools",
+  "sessions": [
+    {
+      "date": "2026-10-20",
+      "from": "09:40",
+      "to": "10:48",
+      "sessionId": "e22724ac-7cac-4ede-a1f5-b19f5616fa6f",
+      "branch": "master",
+      "commits": [],
+      "surfaces": [
+        "presenter-tools"
+      ],
+      "files": [
+        "src/PresenterTools/Shots/EditorView.cs",
+        "src/PresenterTools/ToolbarWindow.xaml.cs",
+        "src/PresenterTools/AppSettings.cs",
+        "src/PresenterTools.Tests/Sta.cs",
+        "src/PresenterTools.Tests/EditorViewTests.cs",
+        "src/PresenterTools.Tests/ToolbarPositionTests.cs"
+      ],
+      "mechanism": {
+        "takes": "the active drawing tool, mouse-wheel input over a scaled screenshot canvas, and a floating tool palette's window position",
+        "does": "sets each tool's cursor on the whole drawing host rather than the image, zooms around the pointer with any tool, and persists the palette's screen position on every close path, using its pre-dock spot while docked",
+        "returns": "a desktop editor whose cursor, zoom and palette placement behave the same everywhere, guarded by window-level unit tests on a single STA thread"
+      },
+      "portsAsIs": [
+        "window-level xUnit harness for WPF (one STA thread, one Application, PerMonitorV2)",
+        "remember-window-position on every close path"
+      ],
+      "perCustomer": [
+        "the editor's tool set",
+        "the settings file location"
+      ],
+      "evidence": [
+        "src/PresenterTools.Tests",
+        "tests: 28 passed with the fixes, 18 failed against the old code",
+        "installer: setup/PresenterTools.msi version 1.2.2"
+      ],
+      "toolchain": {
+        "skills": [
+          "report",
+          "claude-learn",
+          "claude-learn-worktime",
+          "track-time",
+          "dotnet-conventions"
+        ],
+        "mcpServers": [],
+        "agents": [
+          "wpf-expert",
+          "fork"
+        ]
+      },
+      "industry": "presentation and training tools",
+      "status": "Built and running in-house",
+      "catalogue": {
+        "action": "none"
+      }
+    }
+  ]
+}

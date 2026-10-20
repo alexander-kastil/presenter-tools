@@ -37,7 +37,10 @@ public static class AppSettings
     public static string DataFolder { get; } = Path.Combine(
         Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "PresenterTools");
 
-    private static string FilePath => Path.Combine(
+    // Tests point this at a temp file so they never touch the real settings.json.
+    internal static string? FilePathOverride { get; set; }
+
+    private static string FilePath => FilePathOverride ?? Path.Combine(
         Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData), "PresenterTools", "settings.json");
 
     public static ProviderSettings LoadProvider()

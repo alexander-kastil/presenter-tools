@@ -1,4 +1,5 @@
 <Solution>
   <Project Path="PresenterTools/PresenterTools.csproj" />
   <Project Path="PresenterTools.Setup/PresenterTools.Setup.wixproj" />
+  <Project Path="PresenterTools.Tests/PresenterTools.Tests.csproj" />
 </Solution>

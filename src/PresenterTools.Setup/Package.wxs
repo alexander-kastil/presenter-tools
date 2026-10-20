@@ -32,7 +32,7 @@
       <RegistryValue Root="HKLM" Key="Software\PresenterTools" Name="Firewall" Type="integer" Value="1" KeyPath="yes" />
     </Component>
 
-    <Property Id="AUTOSTART" Secure="yes" />
+    <Property Id="AUTOSTART" Value="1" Secure="yes" />
     <UIRef Id="PresenterToolsUI" />
 
     <Component Id="AutostartComponent" Directory="INSTALLFOLDER" Bitness="always64" Condition="AUTOSTART = &quot;1&quot;">
