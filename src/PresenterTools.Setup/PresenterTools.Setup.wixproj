@@ -6,7 +6,7 @@
     <PublishDir>$(MSBuildProjectDirectory)\obj\publish\</PublishDir>
     <EngineDir>$(MSBuildProjectDirectory)\..\PresenterTools\engine</EngineDir>
     <MsysBash Condition="'$(MsysBash)' == ''">C:\msys64\usr\bin\bash.exe</MsysBash>
-    <AppVersion Condition="'$(AppVersion)' == ''">1.2.2</AppVersion>
+    <AppVersion Condition="'$(AppVersion)' == ''">1.2.3</AppVersion>
     <DefineConstants>$(DefineConstants);PublishDir=$(PublishDir);AppVersion=$(AppVersion)</DefineConstants>
     <SuppressValidation>false</SuppressValidation>
     <SignThumbprint Condition="'$(SignThumbprint)' == ''">B29050FA48FD6A2337F3944A10E6F461486C533E</SignThumbprint>

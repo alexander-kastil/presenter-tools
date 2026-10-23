@@ -92,6 +92,27 @@ public class ToolbarPositionTests
     }
 
     [Fact]
+    public void Opening_the_library_shows_a_bar_that_was_never_shown()
+    {
+        var spot = SpotOnLastMonitor();
+        using var settings = new TempSettings("{\"Toolbar\":{\"X\":" + spot.X + ",\"Y\":" + spot.Y + "}}");
+
+        Sta.Run(async () =>
+        {
+            using var bar = new Bar();
+            bar.Window.IsVisible.Should().BeFalse();
+
+            Shots.LibraryWindow.ShowOrActivate();
+            await Sta.Settle(1500);
+            bar.Window.IsVisible.Should().BeTrue();
+
+            Shots.LibraryWindow.Toggle();
+            await Sta.Settle(1500);
+            bar.Position.Should().Be(spot);
+        });
+    }
+
+    [Fact]
     public void Bar_comes_back_where_it_was_when_the_app_was_closed()
     {
         var spot = SpotOnLastMonitor();

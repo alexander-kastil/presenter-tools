@@ -20,7 +20,9 @@ internal sealed class LibraryWindow : Window
     readonly WrapPanel strip = new() { Orientation = Orientation.Horizontal, Margin = new Thickness(6) };
     readonly EditorView editor = new();
     readonly ScrollViewer gallery = new() { HorizontalScrollBarVisibility = ScrollBarVisibility.Disabled, VerticalScrollBarVisibility = ScrollBarVisibility.Auto, Background = Brushes.Transparent };
-    readonly Dictionary<string, BitmapSource> cache = [];
+    static readonly Dictionary<string, BitmapSource> cache = [];
+    readonly Queue<(Image Target, CaptureEntry Entry)> pending = new();
+    bool pumping;
     readonly Dictionary<string, Border> tiles = [];
     string signature = string.Empty;
     string? selectedId;
@@ -138,6 +140,7 @@ internal sealed class LibraryWindow : Window
         Closed += (_, _) =>
         {
             editor.Persist();
+            pending.Clear();
             instance = null;
             OpenChanged?.Invoke();
         };
@@ -169,6 +172,7 @@ internal sealed class LibraryWindow : Window
         }
 
         signature = current;
+        pending.Clear();
         strip.Children.Clear();
         tiles.Clear();
         foreach (var entry in entries)
@@ -185,6 +189,7 @@ internal sealed class LibraryWindow : Window
             gallery.Height = rowHeight + strip.Margin.Top + strip.Margin.Bottom;
         }
 
+        PumpThumbnails();
         var selected = entries.FirstOrDefault(e => e.Id == selectedId) ?? entries.FirstOrDefault();
         if (selected is null)
         {
@@ -234,7 +239,17 @@ internal sealed class LibraryWindow : Window
     Border Tile(CaptureEntry entry)
     {
         var panel = new StackPanel();
-        panel.Children.Add(new Image { Source = Thumbnail(entry), Width = ThumbWidth, Height = ThumbHeight, Stretch = Stretch.Uniform });
+        var image = new Image { Width = ThumbWidth, Height = ThumbHeight, Stretch = Stretch.Uniform };
+        if (cache.TryGetValue(Stamp(entry), out var cached))
+        {
+            image.Source = cached;
+        }
+        else
+        {
+            pending.Enqueue((image, entry));
+        }
+
+        panel.Children.Add(image);
         panel.Children.Add(new TextBlock { Text = entry.Time.ToString("d MMM yyyy  HH:mm:ss"), HorizontalAlignment = HorizontalAlignment.Center, Margin = new Thickness(0, 4, 0, 0), Foreground = Brushes.LightGray });
         var tile = new Border
         {
@@ -251,22 +266,36 @@ internal sealed class LibraryWindow : Window
         return tile;
     }
 
-    BitmapSource Thumbnail(CaptureEntry entry)
+    void PumpThumbnails()
     {
-        var key = Stamp(entry);
-        if (cache.TryGetValue(key, out var cached))
+        if (pumping || pending.Count == 0)
         {
-            return cached;
+            return;
         }
 
-        var thumb = Render(entry, ThumbWidth, ThumbHeight);
-        cache[key] = thumb;
-        return thumb;
+        pumping = true;
+        Dispatcher.BeginInvoke(System.Windows.Threading.DispatcherPriority.Background, () =>
+        {
+            pumping = false;
+            if (pending.Count > 0)
+            {
+                var (target, entry) = pending.Dequeue();
+                var thumb = Render(entry, ThumbWidth, ThumbHeight);
+                cache[Stamp(entry)] = thumb;
+                target.Source = thumb;
+                PumpThumbnails();
+            }
+        });
     }
 
-    static BitmapSource Render(CaptureEntry entry, double maxWidth, double maxHeight)
+    internal static BitmapSource Render(CaptureEntry entry, double maxWidth, double maxHeight)
     {
         var sidecar = LibraryStore.LoadSidecar(entry);
+        if (sidecar.Annotations.Count == 0 && sidecar.Crop is null)
+        {
+            return LibraryStore.LoadImage(entry, (int)maxWidth);
+        }
+
         var canvas = Annotations.Compose(LibraryStore.LoadImage(entry), sidecar.Annotations);
         var area = sidecar.Crop is { } c ? new Rect(c.X, c.Y, c.W, c.H) : new Rect(0, 0, canvas.Width, canvas.Height);
         var scale = Math.Min(1, Math.Min(maxWidth / area.Width, maxHeight / area.Height));

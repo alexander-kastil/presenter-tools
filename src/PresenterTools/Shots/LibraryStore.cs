@@ -91,13 +91,18 @@ internal static class LibraryStore
         return entries.OrderByDescending(e => e.Time).ToList();
     }
 
-    public static BitmapSource LoadImage(CaptureEntry entry)
+    public static BitmapSource LoadImage(CaptureEntry entry, int decodeWidth = 0)
     {
         var bitmap = new BitmapImage();
         bitmap.BeginInit();
         bitmap.CacheOption = BitmapCacheOption.OnLoad;
         bitmap.CreateOptions = BitmapCreateOptions.IgnoreColorProfile;
         bitmap.UriSource = new Uri(entry.PngPath);
+        if (decodeWidth > 0)
+        {
+            bitmap.DecodePixelWidth = decodeWidth;
+        }
+
         bitmap.EndInit();
         bitmap.Freeze();
         return bitmap;

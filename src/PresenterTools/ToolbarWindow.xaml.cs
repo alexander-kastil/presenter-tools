@@ -142,7 +142,14 @@ public partial class ToolbarWindow : Window
         }
 
         LibraryTools.Visibility = open ? Visibility.Visible : Visibility.Collapsed;
-        if (open)
+        if (open && !IsVisible)
+        {
+            ShowActivated = false;
+            Show();
+            ShowActivated = true;
+            Dispatcher.BeginInvoke(System.Windows.Threading.DispatcherPriority.Loaded, Dock);
+        }
+        else if (open)
         {
             Dock();
         }

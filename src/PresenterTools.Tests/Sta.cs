@@ -20,6 +20,7 @@ internal static class Sta
         {
             // The app runs PerMonitorV2, so the test process does too: window rectangles are physical pixels.
             SetProcessDpiAwarenessContext(-4);
+            typeof(Application).GetField("_resourceAssembly", System.Reflection.BindingFlags.Static | System.Reflection.BindingFlags.NonPublic)!.SetValue(null, typeof(App).Assembly);
             _ = new Application { ShutdownMode = ShutdownMode.OnExplicitShutdown };
             dispatcher = Dispatcher.CurrentDispatcher;
             ready.Set();

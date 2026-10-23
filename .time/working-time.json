@@ -57,6 +57,66 @@
       "catalogue": {
         "action": "none"
       }
+    },
+    {
+      "date": "2026-10-23",
+      "from": "11:20",
+      "to": "12:35",
+      "sessionId": "637c2b94-25c0-42eb-91cc-4559df31bc5f",
+      "branch": "master",
+      "commits": [],
+      "surfaces": [
+        "presenter-tools"
+      ],
+      "files": [
+        "src/PresenterTools/Shots/LibraryStore.cs",
+        "src/PresenterTools/Shots/LibraryWindow.cs",
+        "src/PresenterTools/ToolbarWindow.xaml.cs",
+        "src/PresenterTools/PresenterTools.csproj",
+        "src/PresenterTools.Setup/PresenterTools.Setup.wixproj",
+        "src/PresenterTools.Tests/Sta.cs",
+        "src/PresenterTools.Tests/LibraryThumbnailTests.cs",
+        "src/PresenterTools.Tests/ToolbarPositionTests.cs",
+        "tasks/lessons.md"
+      ],
+      "mechanism": {
+        "takes": "a growing folder of full-resolution screenshots shown as a thumbnail gallery, and a tool palette window that a start-with-Windows launch keeps hidden",
+        "does": "opens the gallery at once and fills thumbnails one at a time at background priority, decoded at thumbnail width and cached for the whole session, and shows the hidden palette without stealing focus whenever the gallery docks it",
+        "returns": "a capture-to-editor flow whose first open no longer scales with the library size or holds full-size decode memory, with the palette and its editor tools always on screen"
+      },
+      "portsAsIs": [
+        "deferred, size-limited WPF thumbnail gallery with a session cache",
+        "UI-thread stall measurement in a window-level xUnit test"
+      ],
+      "perCustomer": [
+        "the screenshot library folder",
+        "the thumbnail size"
+      ],
+      "evidence": [
+        "src/PresenterTools.Tests",
+        "tests: 33 passed; UI-thread stall 3206 ms before and 485 ms after on 40 large shots",
+        "memory: managed heap 3.6 MB against 1.35 GB private bytes in the running 1.2.2",
+        "installer: setup/PresenterTools.msi version 1.2.3, signature valid"
+      ],
+      "toolchain": {
+        "skills": [
+          "report",
+          "claude-learn",
+          "claude-learn-worktime",
+          "track-time",
+          "dotnet-conventions"
+        ],
+        "mcpServers": [],
+        "agents": [
+          "wpf-expert",
+          "fork"
+        ]
+      },
+      "industry": "presentation and training tools",
+      "status": "Built and running in-house",
+      "catalogue": {
+        "action": "none"
+      }
     }
   ]
 }
