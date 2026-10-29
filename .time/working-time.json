@@ -117,6 +117,42 @@
       "catalogue": {
         "action": "none"
       }
+    },
+    {
+      "date": "2026-10-29",
+      "from": "18:37",
+      "to": "18:47",
+      "sessionId": "1f40cf28-442f-446c-89b8-c3ee18d926bf",
+      "branch": "master",
+      "commits": [],
+      "surfaces": [
+        "presenter-tools"
+      ],
+      "files": [
+        "src/PresenterTools/Shots/LibraryStore.cs",
+        "src/PresenterTools.Tests/LibraryThumbnailTests.cs"
+      ],
+      "mechanism": {
+        "takes": "a library of screenshots, each with its own saved drawings file",
+        "does": "builds the library thumbnails by reading every shot's drawings file, so one empty file closed the whole app",
+        "returns": "the library lists and opens every shot without the app closing"
+      },
+      "portsAsIs": [],
+      "perCustomer": [],
+      "evidence": [
+        "src/PresenterTools.Tests/LibraryThumbnailTests.cs",
+        "installed as version 1.2.4 and running with the Library open"
+      ],
+      "toolchain": {
+        "skills": [],
+        "mcpServers": [],
+        "agents": []
+      },
+      "industry": "presentation and training tools",
+      "status": "Built and running in-house",
+      "catalogue": {
+        "action": "none"
+      }
     }
   ]
 }

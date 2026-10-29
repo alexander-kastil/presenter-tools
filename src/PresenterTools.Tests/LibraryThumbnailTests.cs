@@ -90,4 +90,27 @@ public class LibraryThumbnailTests(ITestOutputHelper output)
             Directory.Delete(folder, true);
         }
     }
+
+    [Fact]
+    public void Empty_sidecar_still_renders_the_shot()
+    {
+        var folder = MakeLibrary(1);
+        var previous = LibraryStore.Root;
+        try
+        {
+            LibraryStore.UseFolder(folder);
+            Sta.Run(() =>
+            {
+                var entry = LibraryStore.List()[0];
+                File.WriteAllText(entry.JsonPath, string.Empty);
+                LibraryStore.LoadSidecar(entry).Annotations.Should().BeEmpty();
+                LibraryWindow.Render(entry, 200, 130).PixelWidth.Should().BeGreaterThan(0);
+            });
+        }
+        finally
+        {
+            LibraryStore.UseFolder(previous);
+            Directory.Delete(folder, true);
+        }
+    }
 }

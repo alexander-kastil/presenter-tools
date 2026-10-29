@@ -39,3 +39,9 @@
 
 **Pattern:** The first capture took about 20 s because `LibraryWindow` decoded all 264 full-size shots on the UI thread on every first open, and the delay grew by about 30 shots a day. After an `--autostart` start the pen bar was never shown, so opening the Library docked a hidden bar and its tools never appeared.
 **Rule:** Test Library changes against a library of hundreds of large shots (`LibraryThumbnailTests`), and test every path that uses the pen bar with a bar that was never shown (`ToolbarPositionTests`).
+
+## A vanishing app is a crash until the event log says otherwise
+
+**Pattern:** "When I click an item in the Library it disappears" was read as a window or focus bug, so the main thread read the Library, chrome, docking and tray code before starting the app once. One start and the Application event log named the cause: a 0-byte sidecar made `LibraryStore.LoadSidecar` throw an unhandled `JsonException` in the thumbnail pump, which closed the whole app.
+**Rule:** For a report that a window or the app disappears, start the app (or check that its process still runs) and read the `.NET Runtime` events in the Application log first; read code only along the stack. Sidecars are written temp-then-move and an unreadable one loads as empty (`LibraryThumbnailTests.Empty_sidecar_still_renders_the_shot`).
+**Replaces:** none

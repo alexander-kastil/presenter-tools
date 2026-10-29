@@ -115,9 +115,20 @@ internal static class LibraryStore
             return new Sidecar([]);
         }
 
-        return JsonSerializer.Deserialize<Sidecar>(File.ReadAllText(entry.JsonPath), Options) ?? new Sidecar([]);
+        try
+        {
+            return JsonSerializer.Deserialize<Sidecar>(File.ReadAllText(entry.JsonPath), Options) ?? new Sidecar([]);
+        }
+        catch (JsonException)
+        {
+            return new Sidecar([]);
+        }
     }
 
-    public static void SaveSidecar(CaptureEntry entry, Sidecar sidecar) =>
-        File.WriteAllText(entry.JsonPath, JsonSerializer.Serialize(sidecar, Options));
+    public static void SaveSidecar(CaptureEntry entry, Sidecar sidecar)
+    {
+        var temp = entry.JsonPath + ".tmp";
+        File.WriteAllText(temp, JsonSerializer.Serialize(sidecar, Options));
+        File.Move(temp, entry.JsonPath, true);
+    }
 }
