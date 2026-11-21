@@ -1,5 +1,6 @@
 using System.Diagnostics;
 using System.IO;
+using System.Net.NetworkInformation;
 using System.Text.RegularExpressions;
 using System.Windows;
 using System.Windows.Threading;
@@ -18,6 +19,7 @@ public enum ReceiverState
 public sealed partial class Receiver : IDisposable
 {
     private static readonly TimeSpan RestartDelay = TimeSpan.FromSeconds(3);
+    private static readonly TimeSpan NetworkSettle = TimeSpan.FromSeconds(5);
 
     private readonly KillOnCloseJob _job = new();
     private readonly Dispatcher _dispatcher = Application.Current.Dispatcher;
@@ -26,6 +28,8 @@ public sealed partial class Receiver : IDisposable
     private Process? _process;
     private StreamWriter? _log;
     private CancellationTokenSource? _titleCts;
+    private readonly DispatcherTimer _networkTimer;
+    private string _network = string.Empty;
     private bool _wanted;
 
     public Receiver()
@@ -39,6 +43,17 @@ public sealed partial class Receiver : IDisposable
                 Launch();
             }
         };
+
+        _networkTimer = new DispatcherTimer { Interval = NetworkSettle };
+        _networkTimer.Tick += (_, _) =>
+        {
+            _networkTimer.Stop();
+            if (_wanted && _process is not null && _network != NetworkSignature())
+            {
+                Restart();
+            }
+        };
+        NetworkChange.NetworkAddressChanged += OnNetworkChanged;
     }
 
     public event EventHandler? Changed;
@@ -46,6 +61,12 @@ public sealed partial class Receiver : IDisposable
     public ReceiverState State { get; private set; } = ReceiverState.Stopped;
 
     public string? LastClient { get; private set; }
+
+    public string? ClientName { get; private set; }
+
+    public string? ClientModel { get; private set; }
+
+    public int? EngineProcessId => _process?.Id;
 
     public string? Error { get; private set; }
 
@@ -131,12 +152,13 @@ public sealed partial class Receiver : IDisposable
         process.BeginOutputReadLine();
         process.BeginErrorReadLine();
         _process = process;
+        _network = NetworkSignature();
         SetState(ReceiverState.Starting, null);
     }
 
     private static List<string> BuildArguments(ReceiverSettings settings)
     {
-        var args = new List<string> { "-n", settings.Name, "-nh" };
+        var args = new List<string> { "-n", settings.Name, "-nh", "-nohold" };
         args.AddRange(["-key", Path.Combine(AppSettings.DataFolder, "uxplay.pem")]);
         switch (settings.Access)
         {
@@ -154,6 +176,26 @@ public sealed partial class Receiver : IDisposable
         }
         return args;
     }
+
+    private void OnNetworkChanged(object? sender, EventArgs e) =>
+        _dispatcher.BeginInvoke(() =>
+        {
+            _networkTimer.Stop();
+            _networkTimer.Start();
+        });
+
+    private static string NetworkSignature() =>
+        string.Join(';', NetworkInterface.GetAllNetworkInterfaces()
+            .Where(n => n.OperationalStatus == OperationalStatus.Up
+                && n.NetworkInterfaceType != NetworkInterfaceType.Loopback
+                && n.GetIPProperties().GatewayAddresses.Count > 0
+                && !n.Description.Contains("Hyper-V", StringComparison.OrdinalIgnoreCase)
+                && !n.Description.Contains("Virtual", StringComparison.OrdinalIgnoreCase)
+                && !n.Description.Contains("WSL", StringComparison.OrdinalIgnoreCase))
+            .SelectMany(n => n.GetIPProperties().UnicastAddresses)
+            .Where(a => a.Address.AddressFamily == System.Net.Sockets.AddressFamily.InterNetwork)
+            .Select(a => a.Address.ToString())
+            .Order());
 
     private void WriteLog(string line)
     {
@@ -174,15 +216,14 @@ public sealed partial class Receiver : IDisposable
         {
             _dispatcher.BeginInvoke(() => SetState(ReceiverState.Running, null));
         }
-        var match = ClientPattern().Match(line);
-        if (match.Success)
+        if (ParseClient(line) is { } client)
         {
-            var deviceName = match.Groups["name"].Value;
-            var client = $"{deviceName} ({match.Groups["model"].Value})";
             _dispatcher.BeginInvoke(() =>
             {
-                RetitleWindow(deviceName);
-                LastClient = $"{client}, {DateTime.Now:t}";
+                RetitleWindow(client.Name);
+                ClientName = client.Name;
+                ClientModel = client.Model;
+                LastClient = $"{client.Name} ({client.Model}), {DateTime.Now:t}";
                 Changed?.Invoke(this, EventArgs.Empty);
             });
         }
@@ -254,6 +295,8 @@ public sealed partial class Receiver : IDisposable
     public void Dispose()
     {
         _wanted = false;
+        NetworkChange.NetworkAddressChanged -= OnNetworkChanged;
+        _networkTimer.Stop();
         _restartTimer.Stop();
         Kill();
         lock (_logLock)
@@ -262,6 +305,12 @@ public sealed partial class Receiver : IDisposable
             _log = null;
         }
         _job.Dispose();
+    }
+
+    internal static (string Name, string Model)? ParseClient(string line)
+    {
+        var match = ClientPattern().Match(line);
+        return match.Success ? (match.Groups["name"].Value, match.Groups["model"].Value) : null;
     }
 
     [GeneratedRegex(@"connection request from (?<name>.+) \((?<model>[^)]*)\) with deviceID")]

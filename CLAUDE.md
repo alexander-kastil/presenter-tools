@@ -27,7 +27,7 @@ tasks/                     lessons.md
 
 | Topic | Lives in |
 | --- | --- |
-| .NET, WPF and WiX, git history | `~/.claude/skills/` dotnet-conventions, git-history-ops |
+| .NET, WPF and WiX, git history | `~/.claude/skills/` dotnet, git-history-ops |
 | Desktop app, tests, lifecycle, tray, settings, installer, release | `.claude/rules/desktop.md` |
 | Features as the user sees them | `readme.md`, `docs/*.md` |
 | Corrections | `tasks/lessons.md` |
@@ -47,7 +47,7 @@ Orchestration runs in the installed plugins and the house rules in `~/.claude/CL
 - **Agent notation**: always refer to a subagent as `@<name> (<agent type>)`, e.g. `@tray-fix (wpf expert)`. Never the bare name, never the type alone. Give every spawn an explicit name so both halves exist.
 - **Shell**: Bash for shell operations; PowerShell only where Windows makes it unavoidable.
 - Write clean code with no noise: no inline comments, no placeholder notes, no error handling in scripts unless asked.
-- No experimental or test files in the repo root: use `.claude/experiments/` or the scratchpad.
+- No experimental or test files in the repo root: use `assets/experiments/` or the scratchpad.
 - Internal links are relative; anchors are `#heading-name`; every code fence declares a language.
 - If a quality check fails, fix the cause. Never bypass with `--no-verify`.
 
@@ -55,5 +55,5 @@ Orchestration runs in the installed plugins and the house rules in `~/.claude/CL
 
 - **Plan first** for anything non-trivial (3+ steps or an architectural decision): write it to `tasks/todo.md`, check in, then track progress there.
 - **Verify before reporting done.** Run the check, show the command and its output. A claim is not a receipt.
-- **Review `tasks/lessons.md`** at session start; `claude-learn`'s `instruction-audit` gate prunes it and this file.
+- **Review `tasks/lessons.md`** at session start; `claude-learn-audit`'s `instruction-audit` gate prunes it and this file.
 - **Simplicity first**: minimal diff, root causes over patches, no rewrite to fix a typo.

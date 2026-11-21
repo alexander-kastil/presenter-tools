@@ -10,6 +10,8 @@ public partial class App : Application
     private StatusWindow? _status;
     private TrayIcon? _tray;
     private CaptureHotkey? _hotkey;
+    private ScriptChannel? _channel;
+    private McpServer? _mcp;
 
     public static App Instance => (App)Current;
 
@@ -18,6 +20,12 @@ public partial class App : Application
     protected override void OnStartup(StartupEventArgs e)
     {
         base.OnStartup(e);
+
+        if (ScriptChannel.IsCommand(e.Args))
+        {
+            Shutdown(ScriptChannel.Run(e.Args));
+            return;
+        }
 
         _singleInstance = new Mutex(true, @"Local\integrations.at.PresenterTools", out var isFirst);
         if (!isFirst)
@@ -37,7 +45,8 @@ public partial class App : Application
             overlay.Show();
         }
 
-        _receiver = new Receiver();
+        var receiver = new Receiver();
+        _receiver = receiver;
         _status = new StatusWindow(_receiver);
         var toolbar = new ToolbarWindow(session, _receiver, _status);
         session.Toolbar = toolbar;
@@ -47,6 +56,9 @@ public partial class App : Application
             toolbar.Show();
         }
         session.SetMode(Mode.Mouse);
+        _channel = new ScriptChannel(Dispatcher, message => ScriptCommand.Run(session, () => Mirror.Find(receiver), message.Args, message.Folder));
+
+        _mcp = McpServer.TryStart(Dispatcher, () => Mirror.Find(receiver));
 
         _hotkey = new CaptureHotkey(() => _ = Shots.ShotCapture.Run(0));
         RegisterHotkey();
@@ -77,6 +89,8 @@ public partial class App : Application
     protected override void OnExit(ExitEventArgs e)
     {
         _hotkey?.Dispose();
+        _channel?.Dispose();
+        _mcp?.Dispose();
         _receiver?.Dispose();
         _tray?.Dispose();
         _singleInstance?.Dispose();

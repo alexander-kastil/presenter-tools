@@ -59,7 +59,7 @@ public static class MirrorTitle
         }
     }
 
-    private static List<IntPtr> FindWindows(int processId)
+    internal static List<IntPtr> FindWindows(int processId)
     {
         var result = new List<IntPtr>();
         EnumWindows((hwnd, _) =>

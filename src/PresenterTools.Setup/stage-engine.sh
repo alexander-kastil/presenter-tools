@@ -13,10 +13,11 @@ PLUGINS="coreelements app playback typefindfunctions autodetect videoconvertscal
 d3d11 d3d12 audioconvert audioresample audioparsers volume wasapi wasapi2 directsound jpeg imagefreeze
 debugutilsbad hls adaptivedemux2 soup isomp4 mpegtsdemux id3demux videorate level rtp pango videofilter"
 
-if [ ! -f "$UXPLAY/build/uxplay.exe" ]; then
-  cmake -S "$UXPLAY" -B "$UXPLAY/build" -G Ninja
-  ninja -C "$UXPLAY/build"
-fi
+rm -rf "$UXPLAY/build"
+mkdir -p "$UXPLAY/build/tmp"
+export TMP="$(cygpath -m "$UXPLAY/build/tmp")" TEMP="$(cygpath -m "$UXPLAY/build/tmp")" TMPDIR="$UXPLAY/build/tmp"
+cmake -S "$UXPLAY" -B "$UXPLAY/build" -G Ninja
+ninja -C "$UXPLAY/build"
 
 rm -rf "$OUT"
 mkdir -p "$OUT/lib/gstreamer-1.0" "$OUT/libexec/gstreamer-1.0"

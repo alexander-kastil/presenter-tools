@@ -45,6 +45,8 @@ public partial class OverlayWindow : Window
 
     public InkCanvas Ink => Canvas;
 
+    public NativeMethods.RECT Bounds => _bounds;
+
     protected override void OnDpiChanged(DpiScale oldDpi, DpiScale newDpi)
     {
         base.OnDpiChanged(oldDpi, newDpi);

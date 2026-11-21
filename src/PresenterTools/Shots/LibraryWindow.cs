@@ -91,6 +91,8 @@ internal sealed class LibraryWindow : Window
         Title = "Presenter Tools Library";
         Width = 960;
         Height = 640;
+        MinWidth = 948;
+        MinHeight = 834;
         gallery.Content = strip;
         gallery.Resources.Add(typeof(System.Windows.Controls.Primitives.ScrollBar), Chrome.Get("BlueScrollBar"));
         gallery.PreviewMouseWheel += (_, e) =>
