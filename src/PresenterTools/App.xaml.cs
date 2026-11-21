@@ -21,6 +21,12 @@ public partial class App : Application
     {
         base.OnStartup(e);
 
+        if (McpBridge.IsBridge(e.Args))
+        {
+            Shutdown(McpBridge.Run());
+            return;
+        }
+
         if (ScriptChannel.IsCommand(e.Args))
         {
             Shutdown(ScriptChannel.Run(e.Args));

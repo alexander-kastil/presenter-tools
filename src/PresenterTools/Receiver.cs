@@ -158,7 +158,7 @@ public sealed partial class Receiver : IDisposable
 
     private static List<string> BuildArguments(ReceiverSettings settings)
     {
-        var args = new List<string> { "-n", settings.Name, "-nh", "-nohold" };
+        var args = new List<string> { "-n", settings.Name, "-nh", "-nohold", "-reset", "0" };
         args.AddRange(["-key", Path.Combine(AppSettings.DataFolder, "uxplay.pem")]);
         switch (settings.Access)
         {
